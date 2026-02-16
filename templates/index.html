@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BingX Trading Terminal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .card h2 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        .btn-long {
+            background: #10b981;
+            color: white;
+        }
+        .btn-long:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        .btn-short {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-short:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+        .btn-calculate {
+            background: #3b82f6;
+            color: white;
+            width: 100%;
+        }
+        .btn-calculate:hover {
+            background: #2563eb;
+        }
+        .price-display {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .calculation-result {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .calculation-result div {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .trade-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success {
+            background: #10b981;
+        }
+        .error {
+            background: #ef4444;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .info-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .info-box .label {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        .info-box .value {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 BingX Trading Terminal</h1>
+            <p>Risk-Based Position Sizing | Market Orders | Auto SL/TP</p>
+        </div>
+
+        <div class="main-grid">
+            <!-- Left Panel: Market Data & Calculator -->
+            <div class="card">
+                <h2>📊 Market Data & Calculator</h2>
+                
+                <div class="form-group">
+                    <label>Trading Pair:</label>
+                    <select id="symbolSelect" onchange="updatePrice()">
+                        <option value="BTC-USDT">BTC-USDT</option>
+                        <option value="ETH-USDT">ETH-USDT</option>
+                        <option value="SOL-USDT">SOL-USDT</option>
+                        <option value="BNB-USDT">BNB-USDT</option>
+                    </select>
+                </div>
+
+                <div class="price-display" id="priceDisplay">
+                    Loading...
+                </div>
+
+                <div class="form-group">
+                    <label>Entry Price (Current):</label>
+                    <input type="number" id="entryPrice" step="0.01" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Stop Loss Price:</label>
+                    <input type="number" id="stopLoss" step="0.01" placeholder="Enter your stop loss price">
+                </div>
+
+                <div class="form-group">
+                    <label>Risk Amount ($):</label>
+                    <input type="number" id="riskAmount" value="5" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label>Leverage:</label>
+                    <select id="leverage">
+                        <option value="1">1x</option>
+                        <option value="2">2x</option>
+                        <option value="3">3x</option>
+                        <option value="5">5x</option>
+                        <option value="10">10x</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-calculate" onclick="calculatePosition()">🧮 Calculate Position Size</button>
+
+                <div id="calculationResult"></div>
+            </div>
+
+            <!-- Right Panel: Order Execution -->
+            <div class="card">
+                <h2>⚡ Order Execution</h2>
+                
+                <div class="info-grid">
+                    <div class="info-box">
+                        <div class="label">Direction</div>
+                        <div class="value" id="directionDisplay">-</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="label">Quantity</div>
+                        <div class="value" id="quantityDisplay">-</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="label">Position Size</div>
+                        <div class="value" id="positionSizeDisplay">-</div>
+                    </div>
+                </div>
+
+                <div class="info-grid" style="margin-top: 15px;">
+                    <div class="info-box">
+                        <div class="label">Stop Loss</div>
+                        <div class="value" id="slDisplay">-</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="label">Take Profit</div>
+                        <div class="value" id="tpDisplay">-</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="label">Risk:Reward</div>
+                        <div class="value" id="rrDisplay">-</div>
+                    </div>
+                </div>
+
+                <div class="trade-buttons">
+                    <button class="btn btn-long" onclick="executeTrade('LONG')" id="longBtn" disabled>📈 OPEN LONG</button>
+                    <button class="btn btn-short" onclick="executeTrade('SHORT')" id="shortBtn" disabled>📉 OPEN SHORT</button>
+                </div>
+
+                <div id="statusMessage"></div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 10px;">Account Info</h3>
+                    <div class="info-box">
+                        <div class="label">Balance</div>
+                        <div class="value" id="balanceDisplay">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCalculation = null;
+
+        // Update price on page load
+        window.onload = function() {
+            updatePrice();
+            updateBalance();
+            setInterval(updatePrice, 5000); // Update every 5 seconds
+        };
+
+        async function updatePrice() {
+            const symbol = document.getElementById('symbolSelect').value;
+            try {
+                const response = await fetch(`/api/price/${symbol}`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('priceDisplay').textContent = `$${parseFloat(data.price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    document.getElementById('entryPrice').value = data.price;
+                } else {
+                    document.getElementById('priceDisplay').textContent = 'Error loading price';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('priceDisplay').textContent = 'Error';
+            }
+        }
+
+        async function updateBalance() {
+            try {
+                const response = await fetch('/api/balance');
+                const data = await response.json();
+                if (data.success && data.balance.data) {
+                    const balance = data.balance.data.balance;
+                    document.getElementById('balanceDisplay').textContent = `$${parseFloat(balance.balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function calculatePosition() {
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const stopLoss = parseFloat(document.getElementById('stopLoss').value);
+            const riskAmount = parseFloat(document.getElementById('riskAmount').value);
+            const leverage = parseInt(document.getElementById('leverage').value);
+
+            if (!stopLoss) {
+                showStatus('Please enter a stop loss price', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({entry_price: entryPrice, stop_loss_price: stopLoss, risk_amount: riskAmount, leverage: leverage})
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentCalculation = data.calculation;
+                    displayCalculation(data.calculation);
+                    enableTradeButtons(data.calculation);
+                } else {
+                    showStatus(data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Calculation failed: ' + error, 'error');
+            }
+        }
+
+        function displayCalculation(calc) {
+            const resultDiv = document.getElementById('calculationResult');
+            resultDiv.innerHTML = `
+                <div class="calculation-result">
+                    <div><strong>Direction:</strong> ${calc.direction}</div>
+                    <div><strong>Entry Price:</strong> $${calc.entry_price.toFixed(2)}</div>
+                    <div><strong>Stop Loss:</strong> $${calc.stop_loss_price.toFixed(2)}</div>
+                    <div><strong>Take Profit:</strong> $${calc.take_profit_price.toFixed(2)}</div>
+                    <div><strong>Stop Distance:</strong> $${calc.stop_distance.toFixed(2)} (${calc.risk_percentage.toFixed(2)}%)</div>
+                    <div><strong>Position Size:</strong> $${calc.position_size_usd.toFixed(2)}</div>
+                    <div><strong>Quantity:</strong> ${calc.quantity.toFixed(4)} contracts</div>
+                    <div><strong>Risk:Reward:</strong> 1:${calc.risk_reward_ratio}</div>
+                    <div style="border: none; margin-top: 10px; color: #ef4444;"><strong>Max Loss:</strong> -$${calc.fixed_risk_usd.toFixed(2)}</div>
+                    <div style="border: none; color: #10b981;"><strong>Potential Profit:</strong> +$${calc.potential_profit_usd.toFixed(2)}</div>
+                </div>
+            `;
+
+            document.getElementById('directionDisplay').textContent = calc.direction;
+            document.getElementById('quantityDisplay').textContent = calc.quantity.toFixed(4);
+            document.getElementById('positionSizeDisplay').textContent = `$${calc.position_size_usd.toFixed(2)}`;
+            document.getElementById('slDisplay').textContent = `$${calc.stop_loss_price.toFixed(2)}`;
+            document.getElementById('tpDisplay').textContent = `$${calc.take_profit_price.toFixed(2)}`;
+            document.getElementById('rrDisplay').textContent = `1:${calc.risk_reward_ratio}`;
+        }
+
+        function enableTradeButtons(calc) {
+            const longBtn = document.getElementById('longBtn');
+            const shortBtn = document.getElementById('shortBtn');
+            
+            if (calc.direction === 'LONG') {
+                longBtn.disabled = false;
+                shortBtn.disabled = true;
+            } else {
+                longBtn.disabled = true;
+                shortBtn.disabled = false;
+            }
+        }
+
+        async function executeTrade(direction) {
+            if (!currentCalculation) {
+                showStatus('Please calculate position first', 'error');
+                return;
+            }
+
+            if (currentCalculation.direction !== direction) {
+                showStatus('Direction mismatch! Recalculate position.', 'error');
+                return;
+            }
+
+            const confirmMsg = `Execute ${direction} order?\n\nSymbol: ${document.getElementById('symbolSelect').value}\nQuantity: ${currentCalculation.quantity.toFixed(4)}\nStop Loss: $${currentCalculation.stop_loss_price.toFixed(2)}\nTake Profit: $${currentCalculation.take_profit_price.toFixed(2)}\nRisk: $${currentCalculation.fixed_risk_usd.toFixed(2)}`;
+            
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            showStatus('Executing trade...', 'info');
+
+            try {
+                const response = await fetch('/api/execute_trade', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({symbol: document.getElementById('symbolSelect').value, direction: direction, quantity: currentCalculation.quantity, stop_loss: currentCalculation.stop_loss_price, take_profit: currentCalculation.take_profit_price})
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('✅ Trade executed successfully!', 'success');
+                    updateBalance();
+                    currentCalculation = null;
+                    document.getElementById('longBtn').disabled = true;
+                    document.getElementById('shortBtn').disabled = true;
+                } else {
+                    showStatus('❌ Trade failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Trade execution error: ' + error, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = 'status-message ' + type;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
